@@ -5,43 +5,55 @@ zabbix_export:
       name: Templates/SAN
   templates:
     - uuid: 0e0c766c273b4ac892691a18a9f04e87
-      template: 'Synology CPU Temperature by Zabbix agent'
-      name: 'Synology CPU Temperature by Zabbix agent'
+      template: 'Synology CPU Temperture by Zabbix agent'
+      name: 'Synology CPU Temperture by Zabbix agent'
       groups:
         - name: Templates/SAN
+      items:
+        - uuid: cdaed157a5a3486e8988a5476ce2f06a
+          name: 'CPU Cores Max Temperture'
+          key: 'system.run[cat {$CPU_TEMPERTURE_DIR_PATH}/temp*_input | sort -r | head -n 1]'
+          delay: '{$CPU_TEMPERTURE_UPDATE_INTERVAL}'
+          trends: '0'
+          units: °C
+          preprocessing:
+            - type: STR_REPLACE
+              parameters:
+                - '000'
+                - ''
+          triggers:
+            - uuid: 8d78a7561bbe404ab49af5d1dd8e3905
+              expression: 'last(/Synology CPU Temperture by Zabbix agent/system.run[cat {$CPU_TEMPERTURE_DIR_PATH}/temp*_input | sort -r | head -n 1])>{$CPU_TEMPERTURE_CRIT}'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'last(/Synology CPU Temperture by Zabbix agent/system.run[cat {$CPU_TEMPERTURE_DIR_PATH}/temp*_input | sort -r | head -n 1])>{$CPU_TEMPERTURE_CRIT}-5'
+              name: 'CPU Temperture > {$CPU_TEMPERTURE_CRIT}'
+              priority: HIGH
+            - uuid: 37cd1acf6b0c479d83c7c5ffa5307c44
+              expression: 'last(/Synology CPU Temperture by Zabbix agent/system.run[cat {$CPU_TEMPERTURE_DIR_PATH}/temp*_input | sort -r | head -n 1])>{$CPU_TEMPERTURE_WARN}'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'last(/Synology CPU Temperture by Zabbix agent/system.run[cat {$CPU_TEMPERTURE_DIR_PATH}/temp*_input | sort -r | head -n 1])>{$CPU_TEMPERTURE_WARN}-5'
+              name: 'CPU Temperture > {$CPU_TEMPERTURE_WARN}'
+              priority: WARNING
+              dependencies:
+                - name: 'CPU Temperture > {$CPU_TEMPERTURE_CRIT}'
+                  expression: 'last(/Synology CPU Temperture by Zabbix agent/system.run[cat {$CPU_TEMPERTURE_DIR_PATH}/temp*_input | sort -r | head -n 1])>{$CPU_TEMPERTURE_CRIT}'
+                  recovery_expression: 'last(/Synology CPU Temperture by Zabbix agent/system.run[cat {$CPU_TEMPERTURE_DIR_PATH}/temp*_input | sort -r | head -n 1])>{$CPU_TEMPERTURE_CRIT}-5'
       discovery_rules:
         - uuid: cd89ff410f8a4ffcb30646d5523f9f11
           name: 'CPU Temperture Discovery'
-          key: 'system.run[for label in /sys/devices/platform/coretemp.0/hwmon/hwmon0/temp*_label; do label_content=$(cat $label); echo "$label_content"; input="${label/_label/_input}"; echo "$input"; done]'
+          key: 'system.run[for label in {$CPU_TEMPERTURE_DIR_PATH}/temp*_label; do label_content=$(cat $label); echo "$label_content"; input="${label/_label/_input}"; echo "$input"; done]'
           delay: 1h
           item_prototypes:
             - uuid: 8684724842a243d987d563a390413212
-              name: 'CPU {#CPU_LABEL} Temperature'
-              key: 'vfs.file.contents[{#CPU_TEMPERATURE_FILE}]'
-              delay: 15s
+              name: 'CPU {#CPU_LABEL} Temperture'
+              key: 'vfs.file.contents[{#CPU_TEMPERTURE_FILE}]'
+              delay: '{$CPU_TEMPERTURE_UPDATE_INTERVAL}'
               units: °C
               preprocessing:
                 - type: STR_REPLACE
                   parameters:
                     - '000'
                     - ''
-              trigger_prototypes:
-                - uuid: ea55dbb49e0f407eb1fa330e7d94582a
-                  expression: 'last(/Synology CPU Temperature by Zabbix agent/vfs.file.contents[{#CPU_TEMPERATURE_FILE}])>{$CPU_TEMP_CRIT}'
-                  recovery_mode: RECOVERY_EXPRESSION
-                  recovery_expression: 'last(/Synology CPU Temperature by Zabbix agent/vfs.file.contents[{#CPU_TEMPERATURE_FILE}])<({$CPU_TEMP_CRIT}-5)'
-                  name: 'CPU {#CPU_LABEL} Temperture > {$CPU_TEMP_CRIT}'
-                  priority: HIGH
-                - uuid: 94f319ee810e433e97ba877565d2f8c3
-                  expression: 'last(/Synology CPU Temperature by Zabbix agent/vfs.file.contents[{#CPU_TEMPERATURE_FILE}])>{$CPU_TEMP_WARN}'
-                  recovery_mode: RECOVERY_EXPRESSION
-                  recovery_expression: 'last(/Synology CPU Temperature by Zabbix agent/vfs.file.contents[{#CPU_TEMPERATURE_FILE}])<({$CPU_TEMP_WARN}-5)'
-                  name: 'CPU {#CPU_LABEL} Temperture > {$CPU_TEMP_WARN}'
-                  priority: WARNING
-                  dependencies:
-                    - name: 'CPU {#CPU_LABEL} Temperture > {$CPU_TEMP_CRIT}'
-                      expression: 'last(/Synology CPU Temperature by Zabbix agent/vfs.file.contents[{#CPU_TEMPERATURE_FILE}])>{$CPU_TEMP_CRIT}'
-                      recovery_expression: 'last(/Synology CPU Temperature by Zabbix agent/vfs.file.contents[{#CPU_TEMPERATURE_FILE}])<({$CPU_TEMP_CRIT}-5)'
           preprocessing:
             - type: JAVASCRIPT
               parameters:
@@ -51,13 +63,17 @@ zabbix_export:
                   for (var i = 0; i < data.length; i += 2) {
                     var obj = {
                       "{#CPU_LABEL}": data[i],
-                      "{#CPU_TEMPERATURE_FILE}": data[i + 1]
+                      "{#CPU_TEMPERTURE_FILE}": data[i + 1]
                     };
                     result.push(obj);
                   }
                   return JSON.stringify(result);
       macros:
-        - macro: '{$CPU_TEMP_CRIT}'
+        - macro: '{$CPU_TEMPERTURE_CRIT}'
           value: '70'
-        - macro: '{$CPU_TEMP_WARN}'
+        - macro: '{$CPU_TEMPERTURE_DIR_PATH}'
+          value: /sys/devices/platform/coretemp.0/hwmon/hwmon0
+        - macro: '{$CPU_TEMPERTURE_UPDATE_INTERVAL}'
+          value: 15s
+        - macro: '{$CPU_TEMPERTURE_WARN}'
           value: '60'
