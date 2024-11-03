@@ -25,19 +25,19 @@ zabbix_export:
             - uuid: 8d78a7561bbe404ab49af5d1dd8e3905
               expression: 'last(/Synology CPU Temperture by Zabbix agent/system.run[cat {$CPU_TEMPERTURE_DIR_PATH}/temp*_input | sort -r | head -n 1])>{$CPU_TEMPERTURE_CRIT}'
               recovery_mode: RECOVERY_EXPRESSION
-              recovery_expression: 'last(/Synology CPU Temperture by Zabbix agent/system.run[cat {$CPU_TEMPERTURE_DIR_PATH}/temp*_input | sort -r | head -n 1])>{$CPU_TEMPERTURE_CRIT}-5'
+              recovery_expression: 'last(/Synology CPU Temperture by Zabbix agent/system.run[cat {$CPU_TEMPERTURE_DIR_PATH}/temp*_input | sort -r | head -n 1])<({$CPU_TEMPERTURE_CRIT}-5)'
               name: 'CPU Temperture > {$CPU_TEMPERTURE_CRIT}'
               priority: HIGH
             - uuid: 37cd1acf6b0c479d83c7c5ffa5307c44
               expression: 'last(/Synology CPU Temperture by Zabbix agent/system.run[cat {$CPU_TEMPERTURE_DIR_PATH}/temp*_input | sort -r | head -n 1])>{$CPU_TEMPERTURE_WARN}'
               recovery_mode: RECOVERY_EXPRESSION
-              recovery_expression: 'last(/Synology CPU Temperture by Zabbix agent/system.run[cat {$CPU_TEMPERTURE_DIR_PATH}/temp*_input | sort -r | head -n 1])>{$CPU_TEMPERTURE_WARN}-5'
+              recovery_expression: 'last(/Synology CPU Temperture by Zabbix agent/system.run[cat {$CPU_TEMPERTURE_DIR_PATH}/temp*_input | sort -r | head -n 1])<({$CPU_TEMPERTURE_WARN}-5)'
               name: 'CPU Temperture > {$CPU_TEMPERTURE_WARN}'
               priority: WARNING
               dependencies:
                 - name: 'CPU Temperture > {$CPU_TEMPERTURE_CRIT}'
                   expression: 'last(/Synology CPU Temperture by Zabbix agent/system.run[cat {$CPU_TEMPERTURE_DIR_PATH}/temp*_input | sort -r | head -n 1])>{$CPU_TEMPERTURE_CRIT}'
-                  recovery_expression: 'last(/Synology CPU Temperture by Zabbix agent/system.run[cat {$CPU_TEMPERTURE_DIR_PATH}/temp*_input | sort -r | head -n 1])>{$CPU_TEMPERTURE_CRIT}-5'
+                  recovery_expression: 'last(/Synology CPU Temperture by Zabbix agent/system.run[cat {$CPU_TEMPERTURE_DIR_PATH}/temp*_input | sort -r | head -n 1])<({$CPU_TEMPERTURE_CRIT}-5)'
       discovery_rules:
         - uuid: cd89ff410f8a4ffcb30646d5523f9f11
           name: 'CPU Temperture Discovery'
