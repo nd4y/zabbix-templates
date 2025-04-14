@@ -1,5 +1,6 @@
-1. Запустите Blackbox exporter. Пример конфигурации ниже
-```docker-compose
+1. Запустите Blackbox exporter. Пример для конфигурации docker compose ниже
+docker-compose.yaml
+```yaml
 services:
   blackbox-exporter:
     image: prom/blackbox-exporter:v0.26.0
@@ -11,8 +12,8 @@ services:
     ports:
       - "9115:9115"
 ```
-
-```blackbox.yml
+blackbox.yml
+```yaml
 modules:
   http_2xx:
     prober: http
