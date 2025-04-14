@@ -1,0 +1,127 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: a571c0d144b14fd4a87a9d9b2aa9fcd6
+      name: Templates/Applications
+  templates:
+    - uuid: 42182098e353435ca2dd752852134317
+      template: 'HTTP Monitoring via Blackbox exporter'
+      name: 'HTTP Monitoring via Blackbox exporter'
+      groups:
+        - name: Templates/Applications
+      items:
+        - uuid: d94f17ccb932497ba249d9986b4acda9
+          name: blackbox_http_2xx
+          type: HTTP_AGENT
+          key: blackbox_http_2xx
+          value_type: TEXT
+          trends: '0'
+          url: '{$BLACKBOX_EXPORTER_METRICS_ENDPOINT}/probe?target={$BLACKBOX_EXPORTER_TARGET_ENDPOINT}&module={$BLACKBOX_EXPORTER_MODULE}'
+          triggers:
+            - uuid: 561e892581de405687fd560362e6da5e
+              expression: 'nodata(/HTTP Monitoring via Blackbox exporter/blackbox_http_2xx,15m)<>0'
+              name: 'Blackbox Exporter http_2xx nodata for 15m'
+              priority: AVERAGE
+              description: 'Blackbox exporter did not return valid data within 15 minutes. Please check your configuration.'
+        - uuid: a3a05454214844a0b0e3187bdac6e0f9
+          name: 'Days until certificate expiration'
+          type: CALCULATED
+          key: days_until_certificate_expiration
+          params: '(last(//probe_ssl_earliest_cert_expiry) - now()) / (24*60*60)'
+        - uuid: beb46083e9af4fe0bbce2c5a9af201da
+          name: probe_http_status_code
+          type: DEPENDENT
+          key: probe_http_status_code
+          delay: '0'
+          preprocessing:
+            - type: PROMETHEUS_PATTERN
+              parameters:
+                - probe_http_status_code
+                - value
+                - ''
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
+          master_item:
+            key: blackbox_http_2xx
+          triggers:
+            - uuid: d89de41588064cdfa3c4d12d61e2ed89
+              expression: 'last(/HTTP Monitoring via Blackbox exporter/probe_http_status_code)<>200'
+              name: 'Status code is not equal to 200'
+              priority: HIGH
+              description: 'Status code is not equal to 200'
+              dependencies:
+                - name: 'Blackbox exporter probe failed'
+                  expression: 'last(/HTTP Monitoring via Blackbox exporter/probe_success)<>1'
+        - uuid: 0a9ab9409dec4edea2d51411feee42d4
+          name: probe_ssl_earliest_cert_expiry
+          type: DEPENDENT
+          key: probe_ssl_earliest_cert_expiry
+          delay: '0'
+          trends: '0'
+          units: unixtime
+          preprocessing:
+            - type: PROMETHEUS_PATTERN
+              parameters:
+                - probe_ssl_earliest_cert_expiry
+                - value
+                - ''
+          master_item:
+            key: blackbox_http_2xx
+          triggers:
+            - uuid: d9096d38358b42b7a1ae36b35ad55258
+              expression: '(last(/HTTP Monitoring via Blackbox exporter/probe_ssl_earliest_cert_expiry) - now()) / (24*60*60) < 5'
+              name: 'The certificate expires in less than 5 days'
+              priority: HIGH
+              description: 'Less than 5 days left until certificate expiration'
+            - uuid: 1dfd0712753d459ba771f68f42501fdd
+              expression: '(last(/HTTP Monitoring via Blackbox exporter/probe_ssl_earliest_cert_expiry) - now()) / (24*60*60) < 10'
+              name: 'The certificate expires in less than 10 days'
+              priority: AVERAGE
+              description: 'Less than 10 days left until certificate expiration'
+              dependencies:
+                - name: 'The certificate expires in less than 5 days'
+                  expression: '(last(/HTTP Monitoring via Blackbox exporter/probe_ssl_earliest_cert_expiry) - now()) / (24*60*60) < 5'
+            - uuid: c678289fe9df4cf797aa09cbed7d8837
+              expression: '(last(/HTTP Monitoring via Blackbox exporter/probe_ssl_earliest_cert_expiry) - now()) / (24*60*60) < 30'
+              name: 'The certificate expires in less than 30 days'
+              priority: WARNING
+              description: 'Less than 30 days left until certificate expiration'
+              dependencies:
+                - name: 'The certificate expires in less than 10 days'
+                  expression: '(last(/HTTP Monitoring via Blackbox exporter/probe_ssl_earliest_cert_expiry) - now()) / (24*60*60) < 10'
+        - uuid: ea17e2092756471a998bc249792309b2
+          name: probe_success
+          type: DEPENDENT
+          key: probe_success
+          delay: '0'
+          trends: '0'
+          preprocessing:
+            - type: PROMETHEUS_PATTERN
+              parameters:
+                - probe_success
+                - value
+                - ''
+            - type: DISCARD_UNCHANGED_HEARTBEAT
+              parameters:
+                - 24h
+          master_item:
+            key: blackbox_http_2xx
+          triggers:
+            - uuid: c4b7836209314746884c4a6beaf31fbf
+              expression: 'last(/HTTP Monitoring via Blackbox exporter/probe_success)<>1'
+              name: 'Blackbox exporter probe failed'
+              priority: HIGH
+              description: |
+                Blackbox exporter check failed. You can run the query manually to debug
+                
+                {$BLACKBOX_EXPORTER_METRICS_ENDPOINT}/probe?target={$BLACKBOX_EXPORTER_TARGET_ENDPOINT}&module={$BLACKBOX_EXPORTER_MODULE}
+      macros:
+        - macro: '{$BLACKBOX_EXPORTER_METRICS_ENDPOINT}'
+          value: 'http://192.168.0.10:9115'
+          description: 'blackbox exporter endpoint. Example value: http://192.168.0.10:9115'
+        - macro: '{$BLACKBOX_EXPORTER_MODULE}'
+          value: http_2xx
+          description: 'The blackbox exporter module that will handle the request. Example value: http_2xx'
+        - macro: '{$BLACKBOX_EXPORTER_TARGET_ENDPOINT}'
+          description: 'The endpoint of the site that will be checked Example value: http://google.com'
