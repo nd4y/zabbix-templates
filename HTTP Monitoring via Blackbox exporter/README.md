@@ -22,12 +22,14 @@ modules:
     http:
       method: GET
       preferred_ip_protocol: ip4
+      valid_status_codes: []
   http_2xx_w_basic_auth:
     prober: http
     timeout: 30s
     http:
       method: GET
       preferred_ip_protocol: ip4
+      valid_status_codes: []
       basic_auth:
         username: username
         password: password
@@ -42,3 +44,6 @@ modules:
 | {$BLACKBOX_EXPORTER_MODULE}           | http_2xx                 | Имя используемого модуля Blackbox Exporter. Дополнительные модули, например http_2xx_w_basic_auth, нужны для добавления кастомных параметров, например логин и пароль HTTP Basic Auth |
 | {$BLACKBOX_EXPORTER_TARGET_ENDPOINT}  | http://google.com        | Эндпоинт, который будет мониторить Blackbox Exporter                                                                                                                                  |
 |                                       |                          |                                                                                                                                                                                       |
+
+Макросы {$BLACKBOX_EXPORTER_METRICS_ENDPOINT} и {$BLACKBOX_EXPORTER_MODULE} для большинства сайтов будут одинаковые. Их можно определить или на уровне шаблона, или на уровне Global Value ( Administration -> General -> Macros )
+Есть проверка на срок действия сертификата, но в Zabbix 6.0 она не работает. А в 7.0 работает.
